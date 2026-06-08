@@ -36,6 +36,7 @@ class Target(Model):
     top_domain = Column(String)
     top_url = Column(String)
     scope = Column(Boolean, default=True)
+    user_priority = Column(Integer, default=2)
     transactions = relationship("Transaction", cascade="delete")
     poutputs = relationship("PluginOutput", cascade="delete")
     urls = relationship("Url", cascade="delete")

@@ -15,6 +15,7 @@ from owtf.managers.target import get_target_config_dict, get_target_config_dicts
 from owtf.models.plugin import Plugin
 from owtf.models.target import Target
 from owtf.models.work import Work
+from owtf.managers.scheduler import compute_score
 
 
 def load_works(session, target_urls, options):
@@ -160,7 +161,7 @@ def get_work_for_target(session, in_use_target_list):
     :return: A tuple of target, plugin work
     :rtype: `tuple`
     """
-    query = session.query(Work).filter_by(active=True).order_by(Work.id)
+    query = session.query(Work).filter_by(active=True).order_by(Work.priority_score.desc(), Work.id)
     if len(in_use_target_list) > 0:
         query = query.filter(not_(Work.target_id.in_(in_use_target_list)))
     work_obj = query.first()
@@ -274,7 +275,11 @@ def add_work(session, target_list, plugin_list, force_overwrite=False):
                             filter_data={"plugin_key": plugin["key"]},
                             target_id=target["id"],
                         )
-                    work_model = Work(target_id=target["id"], plugin_key=plugin["key"])
+                    work_model = Work(
+                        target_id=target["id"],
+                        plugin_key=plugin["key"],
+                        priority_score=compute_score(plugin, target),
+                    )
                     session.add(work_model)
     session.commit()
 

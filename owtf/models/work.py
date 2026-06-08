@@ -3,7 +3,7 @@ owtf.models.work
 ~~~~~~~~~~~~~~~~
 
 """
-from sqlalchemy import Boolean, Column, Integer, String, ForeignKey, UniqueConstraint
+from sqlalchemy import Boolean, Column, Float, Integer, String, ForeignKey, UniqueConstraint
 
 from owtf.db.model_base import Model
 
@@ -15,6 +15,7 @@ class Work(Model):
     target_id = Column(Integer, ForeignKey("targets.id"))
     plugin_key = Column(String, ForeignKey("plugins.key"))
     active = Column(Boolean, default=True)
+    priority_score = Column(Float, default=0.0)
     # Columns plugin and target are created using backrefs
 
     __table_args__ = (UniqueConstraint("target_id", "plugin_key"),)
