@@ -280,7 +280,8 @@ def update_target(session, data_dict, target_url=None, id=None):
     if data_dict.get("scope", None) is not None:
         target_obj.scope = str2bool(data_dict.get("scope", None))
     if data_dict.get("user_priority", None) is not None:
-        target_obj.user_priority = int(data_dict.get("user_priority")[0] if isinstance(data_dict.get("user_priority"), list) else data_dict.get("user_priority"))
+        raw = data_dict.get("user_priority")
+        target_obj.user_priority = int(raw[0] if isinstance(raw, list) else raw)
     session.commit()
 
 
