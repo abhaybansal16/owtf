@@ -35,15 +35,16 @@ TARGET_CONFIG = {
     "host_name": "",
     "host_path": "",
     "url_scheme": "",
-    "port_number": "",  # In str form
+    "port_number": "",
     "host_ip": "",
-    "alternative_ips": "",  # str(list), so it can easily reversed using list(str)
+    "alternative_ips": "",
     "ip_url": "",
     "top_domain": "",
     "top_url": "",
     "scope": True,
     "max_user_rank": -1,
     "max_owtf_rank": -1,
+    "user_priority": 2,
 }
 
 PATH_CONFIG = {
@@ -278,6 +279,8 @@ def update_target(session, data_dict, target_url=None, id=None):
     # TODO: Updating all related attributes when one attribute is changed
     if data_dict.get("scope", None) is not None:
         target_obj.scope = str2bool(data_dict.get("scope", None))
+    if data_dict.get("user_priority", None) is not None:
+        target_obj.user_priority = int(data_dict.get("user_priority")[0] if isinstance(data_dict.get("user_priority"), list) else data_dict.get("user_priority"))
     session.commit()
 
 

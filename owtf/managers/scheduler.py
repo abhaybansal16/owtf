@@ -9,53 +9,63 @@ import logging
 
 from owtf.models.work import Work
 from owtf.utils.signals import finding_discovered
+from owtf.settings import (
+    SCHEDULER_PLUGIN_WEIGHTS,
+    SCHEDULER_TARGET_PRIORITY_BONUS,
+    SCHEDULER_FEEDBACK_BOOST_AMOUNT,
+    SCHEDULER_DEFAULT_RISK_FACTOR,
+)
 
 logger = logging.getLogger(__name__)
 
-# Plugin type weights — higher means runs first
-PLUGIN_WEIGHTS = {
-    "active": 4.0,
-    "semi_passive": 3.0,
-    "passive": 2.0,
-    "grep": 1.0,
-    "external": 0.0,
+# Risk factor mapping based on plugin code
+# Higher = more critical vulnerability class
+RISK_FACTORS = {
+    "OWTF-DV-005": 3.0,  # SQL Injection
+    "OWTF-DV-012": 3.0,  # Code Injection
+    "OWTF-DV-013": 3.0,  # Command Injection
+    "OWTF-DV-014": 3.0,  # Buffer Overflow
+    "OWTF-DV-001": 2.0,  # Reflected XSS
+    "OWTF-DV-002": 2.0,  # Stored XSS
+    "OWTF-AZ-001": 2.0,  # Path Traversal
+    "OWTF-AZ-002": 2.0,  # Auth Bypass
+    "OWTF-AZ-003": 2.0,  # Privilege Escalation
+    "OWTF-AT-005": 2.0,  # Bypassing Auth Schema
+    "OWTF-ST-001": 2.0,  # Subdomain Takeover
+    "OWTF-SM-005": 1.5,  # CSRF
+    "OWTF-WGP-001": 1.0, # Clickjacking
+    "OWTF-CM-001": 1.0,  # SSL/TLS
 }
-
-# Target priority bonus — user_priority 1=critical, 2=high, 3=medium, 4=low
-TARGET_PRIORITY_BONUS = {
-    1: 10.0,
-    2: 5.0,
-    3: 2.0,
-    4: 0.0,
-}
-
-# How much to boost related tasks when a high severity finding is saved
-FEEDBACK_BOOST_AMOUNT = 2.0
 
 
 def compute_score(plugin, target):
     """Compute priority score for a (plugin, target) work item.
 
-    :param plugin: Plugin dict with at least 'type' key
+    Score formula: (plugin_weight * risk_factor) + target_priority_bonus
+
+    :param plugin: Plugin dict with at least 'type' and 'code' keys
     :type plugin: dict
     :param target: Target dict with at least 'user_priority' key
     :type target: dict
     :return: Priority score — higher means runs first
     :rtype: float
     """
-    plugin_weight = PLUGIN_WEIGHTS.get(plugin.get("type", "passive"), 0.0)
-    target_bonus = TARGET_PRIORITY_BONUS.get(target.get("user_priority", 2), 5.0)
-    score = plugin_weight + target_bonus
+    plugin_weight = SCHEDULER_PLUGIN_WEIGHTS.get(plugin.get("type", "passive"), 0.0)
+    risk_factor = RISK_FACTORS.get(plugin.get("code", ""), SCHEDULER_DEFAULT_RISK_FACTOR)
+    target_bonus = SCHEDULER_TARGET_PRIORITY_BONUS.get(target.get("user_priority", 2), 5.0)
+    score = (plugin_weight * risk_factor) + target_bonus
     logger.debug(
-        "Computed score %.1f for plugin '%s' on target '%s'",
+        "Computed score %.1f for plugin '%s' (type=%s, risk=%.1f) on target '%s'",
         score,
+        plugin.get("code"),
         plugin.get("type"),
+        risk_factor,
         target.get("target_url"),
     )
     return score
 
 
-def boost_related_work(session, plugin_group, boost_amount=FEEDBACK_BOOST_AMOUNT):
+def boost_related_work(session, plugin_group, boost_amount=SCHEDULER_FEEDBACK_BOOST_AMOUNT):
     """Boost priority scores of queued work in the same plugin group.
 
     Called when a high severity finding is discovered so related
@@ -85,6 +95,7 @@ def boost_related_work(session, plugin_group, boost_amount=FEEDBACK_BOOST_AMOUNT
         plugin_group,
         boost_amount,
     )
+
 
 @finding_discovered.connect
 def on_finding_discovered(sender, **kwargs):

@@ -214,3 +214,21 @@ JWT_OPTIONS = {
     "verify_iat": True,
     "verify_aud": False,
 }
+
+SCHEDULER_PLUGIN_WEIGHTS = {
+    "active": 4.0,
+    "semi_passive": 3.0,
+    "passive": 2.0,
+    "grep": 1.0,
+    "external": 0.0,
+}
+
+SCHEDULER_TARGET_PRIORITY_BONUS = {
+    1: 10.0,  # critical
+    2: 5.0,   # high
+    3: 2.0,   # medium
+    4: 0.0,   # low
+}
+
+SCHEDULER_FEEDBACK_BOOST_AMOUNT = 2.0
+SCHEDULER_DEFAULT_RISK_FACTOR = 1.0
